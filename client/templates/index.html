@@ -1,0 +1,498 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styled Arithmetic Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        .calculator {
+            display: inline-block;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #result {
+            height: 40px;
+            background-color: #333;
+            color: #fff;
+            text-align: right;
+            padding-right: 10px;
+            font-size: 24px;
+            line-height: 40px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 60px);
+            gap: 10px;
+        }
+        .button-grid button {
+            width: 60px;
+            height: 60px;
+            font-size: 18px;
+            border-radius: 5px;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .button-grid button:hover {
+            background-color: #ddd;
+        }
+        #response {
+            display: none;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Styled Arithmetic Calculator</h1>
+    <div class="calculator">
+        <form action="/calculate" method="POST" onsubmit="prepareSubmit(event)" id="calc">
+            <div id="result"></div> 
+            
+            <div class="button-grid">
+            
+                <button type="button" onclick="appendToResult('sin')">sin</button>
+                <button type="button" onclick="appendToResult('cos')">cos</button>
+                <button type="button" onclick="appendToResult('tan')">tan</button>
+                <button type="button" onclick="clearResult()">AC</button>
+                
+                <button type="button" onclick="appendToResult('sqrt')">sqrt</button>
+                <button type="button" onclick="appendToResult('^')">^</button>
+                <button type="button" onclick="appendToResult('log')">log</button>
+                <button type="button" onclick="deleteLastCharacter()">del</button>
+
+                <button type="button" onclick="appendToResult('0')">0</button>
+                <button type="button" onclick="appendToResult('+')">+</button>
+                <button type="button" onclick="appendToResult('-')">-</button>
+                <button type="button" onclick="appendToResult('*')">x</button>
+
+                <button type="button" onclick="appendToResult('7')">7</button>
+                <button type="button" onclick="appendToResult('8')">8</button>
+                <button type="button" onclick="appendToResult('9')">9</button>
+                <button type="button" onclick="appendToResult('/')">/</button>
+
+                <button type="button" onclick="appendToResult('4')">4</button>
+                <button type="button" onclick="appendToResult('5')">5</button>
+                <button type="button" onclick="appendToResult('6')">6</button>
+                <button type="button" onclick="appendToResult('%')">%</button>
+
+                <button type="button" onclick="appendToResult('1')">1</button>
+                <button type="button" onclick="appendToResult('2')">2</button>
+                <button type="button" onclick="appendToResult('3')">3</button>
+                <button type="submit">=</button>
+            </div>
+
+            <input type="hidden" id="num1" name="num1">
+            <input type="hidden" id="num2" name="num2">
+            <input type="hidden" id="operation" name="operation">
+
+            <br><br>
+            <label for="protocol">Protocol:</label>
+            <select id="protocol" name="protocol">
+                <option value="TCP">TCP</option>
+                <option value="UDP">UDP</option>
+            </select>
+
+            <div id="response">
+                {% if response %}
+                    <p id="res">{{ response }}</p>
+                    <script>
+                        window.onload = function() {
+                            resultload();
+                        };
+                    </script>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let result = '';
+        let operation = '';
+
+        function deleteLastCharacter() {
+         result = result.slice(0, -1); // Remove the last character from the expression
+        document.getElementById('result').innerText = result; // Update the display
+}
+        function resultload() {
+            let responseElement = document.getElementById('res');
+            if (responseElement) {
+                // Append the result to the calculator's display
+                let resultText = responseElement.innerText;
+                result=resultText;
+                document.getElementById('result').innerText = resultText;
+            }
+        }
+        
+        function appendToResult(value) {
+            result += value;
+            document.getElementById('result').innerText = result;
+        }
+
+        function clearResult() {
+            result = '';
+            document.getElementById('result').innerText = result;
+        }
+
+        function parseExpression(expression) {
+    const unaryOperators = ['sqrt', 'log', 'sin', 'cos', 'tan'];
+    const binaryOperators = ['+', '-', '*', '/', '%', '^'];
+    // Check for unary operations first
+    for (let operator of unaryOperators) {
+        // Check for the operator followed by a number without parentheses
+        if (expression.startsWith(operator)) {
+            const num = expression.slice(operator.length).trim();
+            return {
+                num1: num,
+                operation: operator
+            };
+        }
+        // Check for the operator followed by a number with parentheses
+        if (expression.startsWith(operator + '(') && expression.endsWith(')')) {
+            const num = expression.slice(operator.length + 1, -1).trim();
+            return {
+                num1: num,
+                operation: operator
+            };
+        }
+    }
+
+    // Check for binary operations
+    for (let operator of binaryOperators) {
+        const parts = expression.split(operator);
+        if (parts.length === 2) {
+            return {
+                num1: parts[0].trim(),
+                num2: parts[1].trim(),
+                operation: operator
+            };
+        }
+    }
+
+    return null; // Return null if no valid operation is found
+}
+
+
+    function prepareSubmit(event) {
+        event.preventDefault();  // Prevent form submission for now
+        const parsedResult = parseExpression(result);
+        
+        if (parsedResult) {
+            // Set the form inputs based on the type of operation
+            if (parsedResult.operation && ['sqrt', 'log', 'sin', 'cos', 'tan'].includes(parsedResult.operation)) {
+                document.getElementById('num1').value = parsedResult.num1; // Single operand for unary operators
+                document.getElementById('num2').value = ''; // Clear the second operand
+            } else {
+                document.getElementById('num1').value = parsedResult.num1; // First operand
+                document.getElementById('num2').value = parsedResult.num2; // Second operand
+            }
+            document.getElementById('operation').value = parsedResult.operation;
+
+            // Now submit the form
+            document.getElementById('calc').submit();
+        } else {
+            alert("Invalid expression. Please try again.");
+        }
+    }
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styled Arithmetic Calculator</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            background-color: #005f73;
+            color: white;
+            padding: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        p {
+            margin: 5px 0;
+        }
+        /* Title styling for "ARITHMETIC CALCULATOR" */
+        .project-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 20px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px;
+            gap: 40px;
+        }
+        .calculator {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 280px;
+        }
+        #result {
+            height: 40px;
+            background-color: #333;
+            color: #fff;
+            text-align: right;
+            padding-right: 10px;
+            font-size: 22px;
+            line-height: 40px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 50px);
+            gap: 10px;
+        }
+        .button-grid button {
+            width: 50px;
+            height: 50px;
+            font-size: 16px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .button-grid button:hover {
+            background-color: #e0e0e0;
+        }
+        #response {
+            display: none;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        /* Styling the team members container */
+        .team {
+            padding: 20px;
+            background-color: #005f73;
+            color: white;
+            border-radius: 10px;
+            width: 260px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+        .team h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            border-bottom: 2px solid #fff;
+            padding-bottom: 5px;
+        }
+        .team ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .team ul li {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>22CST52 - COMPUTER NETWORKS</h1>
+        <p>Kongu Engineering College | CSE Dept</p>
+    </header>
+
+    <!-- Project title -->
+    <div class="project-title">
+        ARITHMETIC CALCULATOR
+    </div>
+
+    <div class="container">
+        <!-- Calculator container -->
+        <div class="calculator">
+            <form action="/calculate" method="POST" onsubmit="prepareSubmit(event)" id="calc">
+                <div id="result"></div> <!-- Calculator display -->
+                
+                <div class="button-grid">
+                    <button type="button" onclick="appendToResult('sin')">sin</button>
+                    <button type="button" onclick="appendToResult('cos')">cos</button>
+                    <button type="button" onclick="appendToResult('tan')">tan</button>
+                    <button type="button" onclick="clearResult()">AC</button>
+                    <button type="button" onclick="appendToResult('sqrt')">sqrt</button>
+                    <button type="button" onclick="appendToResult('^')">^</button>
+                    <button type="button" onclick="appendToResult('log')">log</button>
+                    <button type="button" onclick="deleteLastCharacter()">del</button>
+                    <button type="button" onclick="appendToResult('0')">0</button>
+                    <button type="button" onclick="appendToResult('+')">+</button>
+                    <button type="button" onclick="appendToResult('-')">-</button>
+                    <button type="button" onclick="appendToResult('*')">x</button>
+                    <button type="button" onclick="appendToResult('7')">7</button>
+                    <button type="button" onclick="appendToResult('8')">8</button>
+                    <button type="button" onclick="appendToResult('9')">9</button>
+                    <button type="button" onclick="appendToResult('/')">/</button>
+                    <button type="button" onclick="appendToResult('4')">4</button>
+                    <button type="button" onclick="appendToResult('5')">5</button>
+                    <button type="button" onclick="appendToResult('6')">6</button>
+                    <button type="button" onclick="appendToResult('%')">%</button>
+                    <button type="button" onclick="appendToResult('1')">1</button>
+                    <button type="button" onclick="appendToResult('2')">2</button>
+                    <button type="button" onclick="appendToResult('3')">3</button>
+                    <button type="submit">=</button>
+                </div>
+
+                <input type="hidden" id="num1" name="num1">
+                <input type="hidden" id="num2" name="num2">
+                <input type="hidden" id="operation" name="operation">
+
+                <br><br>
+                <label for="protocol">Protocol:</label>
+                <select id="protocol" name="protocol">
+                    <option value="TCP">TCP</option>
+                    <option value="UDP">UDP</option>
+                </select>
+
+                <div id="response">
+                    {% if response %}
+                        <p id="res">{{ response }}</p>
+                        <script>
+                            window.onload = function() {
+                                resultload();
+                            };
+                        </script>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Team members container -->
+        <div class="team">
+            <h2>Team Members</h2>
+            <ul>
+                <li>Anand S (22CSR015)</li>
+                <li>Arunkarthik S (22CSR020)</li>
+                <li>Chandru A (22CSR033)</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Kongu Engineering College | CSE Dept</p>
+    </footer>
+
+    <script>
+        let result = '';
+        let operation = '';
+
+        function deleteLastCharacter() {
+            result = result.slice(0, -1);
+            document.getElementById('result').innerText = result;
+        }
+        function resultload() {
+            let responseElement = document.getElementById('res');
+            if (responseElement) {
+                let resultText = responseElement.innerText;
+                result=resultText;
+                document.getElementById('result').innerText = resultText;
+            }
+        }
+        
+        function appendToResult(value) {
+            result += value;
+            document.getElementById('result').innerText = result;
+        }
+
+        function clearResult() {
+            result = '';
+            document.getElementById('result').innerText = result;
+        }
+
+        function parseExpression(expression) {
+            const unaryOperators = ['sqrt', 'log', 'sin', 'cos', 'tan'];
+            const binaryOperators = ['+', '-', '*', '/', '%', '^'];
+            
+            for (let operator of unaryOperators) {
+                if (expression.startsWith(operator)) {
+                    const num = expression.slice(operator.length).trim();
+                    return {
+                        num1: num,
+                        operation: operator
+                    };
+                }
+                if (expression.startsWith(operator + '(') && expression.endsWith(')')) {
+                    const num = expression.slice(operator.length + 1, -1).trim();
+                    return {
+                        num1: num,
+                        operation: operator
+                    };
+                }
+            }
+
+            for (let operator of binaryOperators) {
+                const parts = expression.split(operator);
+                if (parts.length === 2) {
+                    return {
+                        num1: parts[0].trim(),
+                        num2: parts[1].trim(),
+                        operation: operator
+                    };
+                }
+            }
+            return null;
+        }
+
+        function prepareSubmit(e) {
+            e.preventDefault();
+            let expression = document.getElementById('result').innerText;
+            let parsedResult = parseExpression(expression);
+
+            if (parsedResult) {
+                document.getElementById('num1').value = parsedResult.num1 || document.getElementById('num1').value;
+                if (parsedResult.num2) {
+                    document.getElementById('num2').value = parsedResult.num2;
+                }
+                document.getElementById('operation').value = parsedResult.operation;
+                document.getElementById('calc').submit();
+            } else {
+                alert("Please enter a valid expression.");
+            }
+        }
+    </script>
+</body>
+</html>
