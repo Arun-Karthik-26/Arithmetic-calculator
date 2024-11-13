@@ -4,6 +4,7 @@ import math
 HOST = ''  # Listen on all available interfaces
 PORT = 12345  # Port to bind to
 
+
 # Function to perform arithmetic operations
 def calc(a, op, b=None):
     try:
@@ -30,7 +31,7 @@ def calc(a, op, b=None):
         elif op == "tan":
             return math.tan(math.radians(a))  # Convert to radians
         else:
-            return "Invalid symbol"
+            return "Invalid symbol cannot find symbol"
     except ValueError:
         return "Value Error"
     except ZeroDivisionError:
@@ -41,7 +42,7 @@ def calc(a, op, b=None):
 # Main server function
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server_socket:
     server_socket.bind((HOST, PORT))  # Bind to the specified HOST and PORT
-    print(f"Server is listening on port {PORT}...")
+    print(f"Server is listening on port {PORT}....")
 
     while True:
         data, addr = server_socket.recvfrom(1024)  # Receive data from the client
